@@ -20,10 +20,10 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "transactions", indexes = {
-    @Index(name = "idx_sender", columnList = "senderId"),
-    @Index(name = "idx_recipient", columnList = "recipientId"),
-    @Index(name = "idx_status", columnList = "status"),
-    @Index(name = "idx_created_at", columnList = "createdAt")
+    @Index(name = "idx_transactions_sender", columnList = "senderId"),
+    @Index(name = "idx_transactions_recipient", columnList = "recipientId"),
+    @Index(name = "idx_transactions_status", columnList = "status"),
+    @Index(name = "idx_transactions_created_at", columnList = "createdAt")
 })
 @Data
 @Builder
@@ -40,10 +40,25 @@ public class Transaction {
     @JoinColumn(name = "senderId", nullable = false)
     private User sender;
 
-    @NotNull(message = "Recipient is required")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "recipientId", nullable = false)
+    @JoinColumn(name = "recipient_id")
     private User recipient;
+
+    /** P2P = peer-to-peer (Wezeep user). INTERNATIONAL = worldwide (may be non-Wezeep beneficiary). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "transfer_type", nullable = false, length = 20)
+    @Builder.Default
+    private TransferType transferType = TransferType.P2P;
+
+    /** For INTERNATIONAL: beneficiary name when recipient is not a Wezeep user. */
+    @Column(name = "recipient_name", length = 200)
+    private String recipientName;
+
+    @Column(name = "recipient_phone", length = 30)
+    private String recipientPhone;
+
+    @Column(name = "recipient_country_code", length = 2)
+    private String recipientCountryCode;
 
     @NotNull(message = "Amount sent is required")
     @DecimalMin(value = "0.01", message = "Amount must be at least 0.01")
@@ -113,6 +128,10 @@ public class Transaction {
     @OneToMany(mappedBy = "transaction", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<TransactionTag> tags = new ArrayList<>();
+
+    public enum TransferType {
+        P2P, INTERNATIONAL
+    }
 
     public enum TransactionStatus {
         PENDING, PROCESSING, COMPLETED, FAILED, CANCELLED, DRAFT

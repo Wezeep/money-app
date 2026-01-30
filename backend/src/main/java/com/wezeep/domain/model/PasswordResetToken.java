@@ -12,8 +12,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "password_reset_tokens", indexes = {
-    @Index(name = "idx_token", columnList = "token", unique = true),
-    @Index(name = "idx_user", columnList = "userId")
+    @Index(name = "idx_password_reset_tokens_token", columnList = "token", unique = true),
+    @Index(name = "idx_password_reset_tokens_user", columnList = "userId")
 })
 @Data
 @Builder

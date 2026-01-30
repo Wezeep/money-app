@@ -183,8 +183,10 @@ router.push({
 pathname: "/send-worldwide-details",
 params: {
 recipientName: selectedRecipient!.name,
+recipientPhone: selectedRecipient!.phone,
 recipientCountry: selectedCountry!.name,
 recipientCurrency: selectedCountry!.currency,
+countryCode: selectedCountry!.code,
 },
 });
 };

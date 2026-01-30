@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import {
   CheckCircle,
   Copy,
@@ -38,6 +38,7 @@ type Contact = {
 
 export default function RequestMoneyStatus() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ shareableLink?: string; requestCount?: string }>();
   const { selectedContacts, requestDetails, resetRequest } =
     useRequestContext();
   const [copiedMessage, setCopiedMessage] = useState(false);
@@ -47,8 +48,8 @@ export default function RequestMoneyStatus() {
   );
   const [showDropdown, setShowDropdown] = useState(false);
 
-  // Generate mock request link
-  const requestLink = `https://wezeep.com/pay/${Math.random().toString(36).substring(2, 10)}`;
+  const requestLink = params.shareableLink || `https://wezeep.com/pay/${Math.random().toString(36).substring(2, 10)}`;
+  const requestCount = params.requestCount ? parseInt(params.requestCount, 10) : selectedContacts?.length ?? 1;
 
   // Get expiration date (7 days from now)
   const expirationDate = new Date(

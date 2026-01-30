@@ -18,10 +18,10 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "money_requests", indexes = {
-    @Index(name = "idx_requester", columnList = "requesterId"),
-    @Index(name = "idx_recipient", columnList = "recipientId"),
-    @Index(name = "idx_status", columnList = "status"),
-    @Index(name = "idx_expires_at", columnList = "expiresAt")
+    @Index(name = "idx_money_requests_requester", columnList = "requesterId"),
+    @Index(name = "idx_money_requests_recipient", columnList = "recipientId"),
+    @Index(name = "idx_money_requests_status", columnList = "status"),
+    @Index(name = "idx_money_requests_expires_at", columnList = "expiresAt")
 })
 @Data
 @Builder

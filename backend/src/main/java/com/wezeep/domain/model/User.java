@@ -20,9 +20,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "users", indexes = {
-    @Index(name = "idx_email", columnList = "email", unique = true),
-    @Index(name = "idx_phone", columnList = "phoneNumber", unique = true),
-    @Index(name = "idx_wezeep_id", columnList = "wezeepId", unique = true)
+    @Index(name = "idx_users_email", columnList = "email", unique = true),
+    @Index(name = "idx_users_phone", columnList = "phoneNumber", unique = true),
+    @Index(name = "idx_users_wezeep_id", columnList = "wezeepId", unique = true)
 })
 @Data
 @Builder

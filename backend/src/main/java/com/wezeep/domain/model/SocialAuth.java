@@ -15,8 +15,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "social_auths", indexes = {
-    @Index(name = "idx_provider_id", columnList = "provider,providerUserId", unique = true),
-    @Index(name = "idx_user", columnList = "userId")
+    @Index(name = "idx_social_auths_provider_id", columnList = "provider,providerUserId", unique = true),
+    @Index(name = "idx_social_auths_user", columnList = "userId")
 })
 @Data
 @Builder

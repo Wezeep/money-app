@@ -20,8 +20,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "split_bills", indexes = {
-    @Index(name = "idx_creator", columnList = "creatorId"),
-    @Index(name = "idx_status", columnList = "status")
+    @Index(name = "idx_split_bills_creator", columnList = "creatorId"),
+    @Index(name = "idx_split_bills_status", columnList = "status")
 })
 @Data
 @Builder

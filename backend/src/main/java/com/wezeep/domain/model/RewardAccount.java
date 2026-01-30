@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "reward_accounts", indexes = {
-    @Index(name = "idx_user", columnList = "userId", unique = true)
+    @Index(name = "idx_reward_accounts_user", columnList = "userId", unique = true)
 })
 @Data
 @Builder

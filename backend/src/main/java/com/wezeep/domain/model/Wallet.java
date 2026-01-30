@@ -17,7 +17,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "wallets", indexes = {
-    @Index(name = "idx_user_currency", columnList = "userId,currency")
+    @Index(name = "idx_wallets_user_currency", columnList = "userId,currency")
 })
 @Data
 @Builder

@@ -1,26 +1,56 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-View,
-Text,
-ScrollView,
-TouchableOpacity,
-TextInput,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react-native";
 import { useRouter } from "expo-router";
+import { useAuth } from "@/components/AuthContext";
+import { authApi } from "@/lib/api";
 
 export default function LoginScreen() {
-const router = useRouter();
-const [email, setEmail] = useState("");
-const [password, setPassword] = useState("");
-const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
+  const { isAuthenticated, isLoading: authLoading, login } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-const handleLogin = () => {
-// Mock login - navigate to home
-router.push("/(tabs)");
-};
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.replace("/(tabs)");
+    }
+  }, [authLoading, isAuthenticated, router]);
+
+  const handleLogin = async () => {
+    if (!email.trim() || !password) {
+      Alert.alert("Error", "Please enter email and password");
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await authApi.login({ email: email.trim(), password });
+      await login(res.accessToken, res.refreshToken, {
+        userId: res.userId,
+        email: res.email,
+        wezeepId: res.wezeepId,
+      });
+      router.replace("/(tabs)");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
 return (
 <SafeAreaView className="flex-1 bg-background">
@@ -177,12 +207,10 @@ Or sign in with
 
 {/* Sign Up Link */}
 <View className="flex-row items-center justify-center mt-8 px-6">
-<Text className="text-muted-foreground text-sm">
-Don't have an account?{" "}
-</Text>
-<TouchableOpacity>
-<Text className="text-primary font-bold text-sm">Sign Up</Text>
-</TouchableOpacity>
+  <Text className="text-muted-foreground text-sm">Don't have an account? </Text>
+  <TouchableOpacity onPress={() => router.push("/signup")}>
+    <Text className="text-primary font-bold text-sm">Sign Up</Text>
+  </TouchableOpacity>
 </View>
 
 {/* Terms & Privacy */}

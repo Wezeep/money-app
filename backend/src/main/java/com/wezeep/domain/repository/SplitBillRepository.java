@@ -15,7 +15,7 @@ public interface SplitBillRepository extends JpaRepository<SplitBill, UUID> {
     List<SplitBill> findByCreatorIdOrderByCreatedAtDesc(UUID creatorId);
     Optional<SplitBill> findByGroupLink(String groupLink);
     
-    @Query("SELECT sb FROM SplitBill sb JOIN sb.participants p WHERE p.userId = :userId " +
+    @Query("SELECT sb FROM SplitBill sb JOIN sb.participants p WHERE p.user.id = :userId " +
            "ORDER BY sb.createdAt DESC")
     List<SplitBill> findByParticipantId(@Param("userId") UUID userId);
 }

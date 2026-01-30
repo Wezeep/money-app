@@ -26,7 +26,7 @@
         <spring-cloud.version>2024.0.0</spring-cloud.version>
         <jwt.version>0.12.3</jwt.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
-        <lombok.version>1.18.30</lombok.version>
+        <lombok.version>1.18.40</lombok.version>
     </properties>
     
     <dependencies>
@@ -82,12 +82,15 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
-        
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
         </dependency>
-        
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
@@ -131,7 +134,7 @@
         
         <!-- Rate Limiting -->
         <dependency>
-            <groupId>com.github.vladimir-bukhtoyarov</groupId>
+            <groupId>com.bucket4j</groupId>
             <artifactId>bucket4j-core</artifactId>
             <version>8.10.1</version>
         </dependency>

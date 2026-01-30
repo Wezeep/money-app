@@ -15,8 +15,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "payment_methods", indexes = {
-    @Index(name = "idx_user", columnList = "userId"),
-    @Index(name = "idx_type", columnList = "type")
+    @Index(name = "idx_payment_methods_user", columnList = "userId"),
+    @Index(name = "idx_payment_methods_type", columnList = "type")
 })
 @Data
 @Builder

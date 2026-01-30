@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, Modal } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, Modal, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Users, DollarSign, User, ChevronDown, Check, Plus, Minus, Globe, MapPin } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRequestContext } from '@/components/RequestContext';
+import { splitBillsApi } from '@/lib/api';
 
 type Contact = {
   id: string;
@@ -92,7 +93,9 @@ export default function BillSplitScreen() {
     });
   };
 
-  const handleContinueToSplit = () => {
+  const [splitting, setSplitting] = useState(false);
+
+  const handleContinueToSplit = async () => {
     if (selectedContacts.length === 0) {
       alert('Please select at least one contact');
       return;
@@ -102,14 +105,6 @@ export default function BillSplitScreen() {
       return;
     }
 
-    // Prepare split details
-    const splitDetails = splitType === 'equal' 
-      ? selectedContacts.map(c => ({ contactId: c.id, amount: perPersonAmount }))
-      : customSplits.slice(0, selectedContacts.length).map((split, idx) => ({
-          contactId: selectedContacts[idx].id,
-          amount: split.amount
-        }));
-
     setSelectedContacts(selectedContacts);
     setRequestDetails({
       requestType: 'custom',
@@ -117,13 +112,39 @@ export default function BillSplitScreen() {
       currency: 'USD',
       message: message || 'Split bill payment',
       requestGeo: category,
-      customAmounts: splitDetails.reduce((acc, s) => ({ ...acc, [s.contactId]: s.amount }), {}),
+      customAmounts: splitType === 'equal'
+        ? selectedContacts.reduce((acc, c) => ({ ...acc, [c.id]: perPersonAmount }), {})
+        : customSplits.slice(0, selectedContacts.length).reduce((acc, s, idx) => ({ ...acc, [selectedContacts[idx].id]: s.amount }), {}),
       customCurrencies: {},
       customMessages: {},
       customRequestGeo: {},
     });
 
-    router.push('/bill-split-status');
+    setSplitting(true);
+    try {
+      const participants = splitType === 'equal'
+        ? selectedContacts.map((c) => ({ contactId: c.id, amount: perPersonAmount }))
+        : customSplits.slice(0, selectedContacts.length).map((split, idx) => ({
+            contactId: selectedContacts[idx].id,
+            amount: split.amount,
+          }));
+      const res = await splitBillsApi.create({
+        title: 'Split bill',
+        totalAmount,
+        currency: 'USD',
+        isEqualSplit: splitType === 'equal',
+        notes: message || undefined,
+        participants: participants.map((p) => ({
+          contactId: (p as { contactId: string }).contactId,
+          amount: (p as { amount: string }).amount,
+        })),
+      });
+      router.push({ pathname: '/bill-split-status', params: { splitBillId: res.id, groupLink: res.groupLink ?? '' } });
+    } catch (e: unknown) {
+      Alert.alert('Failed', e instanceof Error ? e.message : 'Could not create split bill');
+    } finally {
+      setSplitting(false);
+    }
   };
 
   const filteredContacts = searchQuery

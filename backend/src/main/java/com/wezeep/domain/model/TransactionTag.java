@@ -13,8 +13,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "transaction_tags", indexes = {
-    @Index(name = "idx_transaction", columnList = "transactionId"),
-    @Index(name = "idx_name", columnList = "name")
+    @Index(name = "idx_transaction_tags_transaction", columnList = "transactionId"),
+    @Index(name = "idx_transaction_tags_name", columnList = "name")
 })
 @Data
 @Builder

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Modal, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ArrowLeft, Search, Filter, Plus, ChevronDown, ChevronRight, X, Wallet, CreditCard, Building2 } from 'lucide-react-native';
 import { useBillPayment } from '@/components/BillPaymentContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { billVendorsApi, billPaymentsApi } from '@/lib/api';
 
 type Vendor = {
   id: string;
@@ -16,7 +17,7 @@ type Vendor = {
   amount?: string;
 };
 
-const vendors: Vendor[] = [
+const fallbackVendors: Vendor[] = [
   { id: '1', name: 'Netflix', category: 'Entertainment', icon: '🎬', color: '#E50914', lastPaid: '2024-01-15', amount: '$15.99' },
   { id: '2', name: 'Spotify', category: 'Entertainment', icon: '🎵', color: '#1DB954', lastPaid: '2024-01-10', amount: '$9.99' },
   { id: '3', name: 'Electric Company', category: 'Utilities', icon: '⚡', color: '#FFA500', lastPaid: '2024-01-05', amount: '$125.50' },
@@ -28,7 +29,8 @@ const vendors: Vendor[] = [
 export default function PayBillScreen() {
   const router = useRouter();
   const { paymentType, setPaymentType, selectedVendor, setSelectedVendor } = useBillPayment();
-  
+  const [vendors, setVendors] = useState<Vendor[]>(fallbackVendors);
+  const [vendorsLoading, setVendorsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [showPaymentOverlay, setShowPaymentOverlay] = useState(false);
@@ -38,9 +40,25 @@ export default function PayBillScreen() {
   const [frequency, setFrequency] = useState('monthly');
   const [showFrequencyDropdown, setShowFrequencyDropdown] = useState(false);
   const [note, setNote] = useState('');
+  const [paying, setPaying] = useState(false);
 
-  const recentlyPaid = vendors.filter(v => v.lastPaid);
-  const filteredVendors = vendors.filter(v => 
+  useEffect(() => {
+    billVendorsApi.getAll()
+      .then((list) => {
+        setVendors(list.map((v) => ({
+          id: v.id,
+          name: v.name,
+          category: v.category,
+          icon: v.icon ?? '📄',
+          color: v.color ?? '#667eea',
+        })));
+      })
+      .catch(() => {})
+      .finally(() => setVendorsLoading(false));
+  }, []);
+
+  const recentlyPaid = vendors.filter(v => (v as Vendor & { lastPaid?: string }).lastPaid);
+  const filteredVendors = vendors.filter(v =>
     v.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -55,8 +73,27 @@ export default function PayBillScreen() {
     setShowPaymentOverlay(true);
   };
 
-  const handleContinueToPay = () => {
-    router.push('/pay-bill-status');
+  const handleContinueToPay = async () => {
+    if (!selectedVendor || !amount || parseFloat(amount) <= 0) {
+      Alert.alert('Error', 'Please enter a valid amount');
+      return;
+    }
+    setPaying(true);
+    try {
+      const res = await billPaymentsApi.create({
+        vendorId: selectedVendor.id,
+        amount: parseFloat(amount).toFixed(2),
+        currency: 'USD',
+        frequency: frequency === 'monthly' ? 'monthly' : frequency === 'yearly' ? 'yearly' : 'one-time',
+        notes: note || undefined,
+      });
+      setShowPaymentOverlay(false);
+      router.push({ pathname: '/pay-bill-status', params: { paymentId: res.id, reference: res.reference ?? '' } });
+    } catch (e: unknown) {
+      Alert.alert('Payment failed', e instanceof Error ? e.message : 'Could not complete payment');
+    } finally {
+      setPaying(false);
+    }
   };
 
   const selectedMethod = paymentMethods.find(m => m.id === selectedPaymentMethod);
@@ -303,14 +340,14 @@ export default function PayBillScreen() {
               </View>
 
               {/* Continue Button */}
-              <TouchableOpacity onPress={handleContinueToPay}>
+              <TouchableOpacity onPress={handleContinueToPay} disabled={paying}>
                 <LinearGradient
                   colors={['#667eea', '#764ba2']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
-                  style={{ borderRadius: 16, padding: 16 }}
+                  style={{ borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
                 >
-                  <Text className="text-white text-center font-bold text-base">Continue to Pay</Text>
+                  {paying ? <ActivityIndicator color="#fff" size="small" /> : <Text className="text-white text-center font-bold text-base">Continue to Pay</Text>}
                 </LinearGradient>
               </TouchableOpacity>
             </ScrollView>

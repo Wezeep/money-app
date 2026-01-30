@@ -17,12 +17,15 @@ import java.util.UUID;
 @AllArgsConstructor
 public class TransactionResponse {
     private UUID id;
+    private Transaction.TransferType transferType;
     private UUID senderId;
     private String senderName;
     private String senderWezeepId;
     private UUID recipientId;
     private String recipientName;
     private String recipientWezeepId;
+    private String recipientPhone;
+    private String recipientCountryCode;
     private BigDecimal amountSent;
     private String sentCurrency;
     private BigDecimal amountReceived;

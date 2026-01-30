@@ -24,13 +24,13 @@ public class ContactController {
 
     @GetMapping
     public ResponseEntity<List<Contact>> getContacts(@AuthenticationPrincipal UserPrincipal userPrincipal) {
-        List<Contact> contacts = contactRepository.findByUserIdOrderByLastUsedAtDesc(userPrincipal.getId());
+        List<Contact> contacts = contactRepository.findByUser_IdOrderByLastUsedAtDesc(userPrincipal.getId());
         return ResponseEntity.ok(contacts);
     }
 
     @GetMapping("/recent")
     public ResponseEntity<List<Contact>> getRecentContacts(@AuthenticationPrincipal UserPrincipal userPrincipal) {
-        List<Contact> contacts = contactRepository.findRecentContacts(userPrincipal.getId());
+        List<Contact> contacts = contactRepository.findFirst3ByUser_IdOrderByLastUsedAtDesc(userPrincipal.getId());
         return ResponseEntity.ok(contacts);
     }
 
@@ -45,7 +45,7 @@ public class ContactController {
         if (query != null && !query.isEmpty()) {
             contacts = contactRepository.searchContacts(userPrincipal.getId(), query);
         } else {
-            contacts = contactRepository.findByUserIdOrderByLastUsedAtDesc(userPrincipal.getId());
+            contacts = contactRepository.findByUser_IdOrderByLastUsedAtDesc(userPrincipal.getId());
         }
         
         // Filter by country if provided

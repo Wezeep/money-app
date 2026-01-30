@@ -1,70 +1,118 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Share } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, Share, ActivityIndicator } from 'react-native';
+import { SafeAreaView as RNSafeAreaView } from 'react-native-safe-area-context';
+
+const SafeAreaView = RNSafeAreaView as React.ComponentType<
+  React.ComponentProps<typeof RNSafeAreaView> & { className?: string }
+>;
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { CheckCircle, Download, Copy, Send, Home, Users, Wallet, Gift, ArrowRight } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
+import { transactionsApi, type TransactionResponse } from '@/lib/api';
+
+function formatDate(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+}
 
 export default function SendP2PStatusScreen() {
-const router = useRouter();
-const [copied, setCopied] = useState(false);
+  const router = useRouter();
+  const { transactionId } = useLocalSearchParams<{ transactionId?: string }>();
+  const [copied, setCopied] = useState(false);
+  const [transaction, setTransaction] = useState<TransactionResponse | null>(null);
+  const [loading, setLoading] = useState(!!transactionId);
+  const [error, setError] = useState<string | null>(null);
 
-// Mock transaction data
-const transaction = {
-amount: '150.00',
-currency: 'USD',
-sender: {
-name: 'John Smith',
-email: 'john.smith@email.com',
-},
-recipient: {
-name: 'Sarah Johnson',
-email: 'sarah.j@email.com',
-},
-transactionId: 'WZP-2024-001234',
-date: new Date().toLocaleDateString('en-US', { 
-month: 'short', 
-day: 'numeric', 
-year: 'numeric',
-}),
-time: new Date().toLocaleTimeString('en-US', { 
-hour: '2-digit',
-minute: '2-digit'
-}),
-paymentMethod: 'Wezeep Wallet',
-rewardsEarned: 15,
-};
+  useEffect(() => {
+    if (!transactionId) {
+      setTransaction(null);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    transactionsApi.getTransaction(transactionId)
+      .then((res) => { if (!cancelled) setTransaction(res); })
+      .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [transactionId]);
 
-const shareMessage = `Hey ${transaction.recipient.name}! 💸 I just sent you $${transaction.amount} via Wezeep! Check your Wezeep account to access your funds instantly. It's super easy and secure! 🚀`;
+  // Fallback mock when no transactionId or API failed
+  const display = transaction
+    ? {
+        amount: transaction.amountSent,
+        currency: transaction.sentCurrency,
+        sender: { name: transaction.senderName, email: '' },
+        recipient: { name: transaction.recipientName, email: transaction.recipientWezeepId ?? '' },
+        transactionId: transaction.reference ?? transaction.id,
+        date: transaction.createdAt ? formatDate(transaction.createdAt) : '',
+        time: transaction.createdAt ? formatTime(transaction.createdAt) : '',
+        paymentMethod: transaction.paymentMethod === 'WEEZEEP_WALLET' ? 'Wezeep Wallet' : transaction.paymentMethod,
+        rewardsEarned: 15,
+      }
+    : {
+        amount: '150.00',
+        currency: 'USD',
+        sender: { name: 'John Smith', email: 'john.smith@email.com' },
+        recipient: { name: 'Sarah Johnson', email: 'sarah.j@email.com' },
+        transactionId: 'WZP-2024-001234',
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        paymentMethod: 'Wezeep Wallet',
+        rewardsEarned: 15,
+      };
 
-const handleCopyMessage = async () => {
-await Clipboard.setStringAsync(shareMessage);
-setCopied(true);
-setTimeout(() => setCopied(false), 2000);
-};
+  const shareMessage = `Hey ${display.recipient.name}! 💸 I just sent you $${display.amount} via Wezeep! Check your Wezeep account to access your funds instantly. It's super easy and secure! 🚀`;
 
-const handleShareMessage = async () => {
-try {
-await Share.share({
-message: shareMessage,
-});
-} catch (error) {
-console.error(error);
-}
-};
+  const handleCopyMessage = async () => {
+    await Clipboard.setStringAsync(shareMessage);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
-const handleDownloadReceipt = () => {
-console.log('Download receipt');
-};
+  const handleShareMessage = async () => {
+    try {
+      await Share.share({ message: shareMessage });
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-const handleSendAnother = () => {
-router.push('/send-p2p');
-};
+  const handleDownloadReceipt = () => {
+    console.log('Download receipt');
+  };
 
-return (
-<SafeAreaView className="flex-1 bg-background">
-<ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+  const handleSendAnother = () => {
+    router.push('/send-p2p');
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator size="large" />
+        <Text className="text-muted-foreground mt-3">Loading transaction...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView className="flex-1 bg-background items-center justify-center px-6">
+        <Text className="text-destructive text-center mb-4">{error}</Text>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text className="text-primary font-semibold">Go back</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView className="flex-1 bg-background">
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
 {/* Success Header with Gradient */}
 <LinearGradient
 colors={['#667eea', '#764ba2']}
@@ -99,9 +147,9 @@ Your money is on its way
 Amount Sent
 </Text>
 <Text className="text-5xl font-bold text-foreground tracking-tight">
-${transaction.amount}
+${display.amount}
 </Text>
-<Text className="text-base text-muted-foreground mt-1">{transaction.currency}</Text>
+<Text className="text-base text-muted-foreground mt-1">{display.currency}</Text>
 </View>
 
 {/* Progress Timeline - Sleek Design */}
@@ -168,38 +216,38 @@ marginBottom: 8,
 {/* Sender */}
 <View className="mb-4">
 <Text className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wide">From</Text>
-<Text className="text-base font-semibold text-foreground">{transaction.sender.name}</Text>
-<Text className="text-sm text-muted-foreground">{transaction.sender.email}</Text>
+<Text className="text-base font-semibold text-foreground">{display.sender.name}</Text>
+<Text className="text-sm text-muted-foreground">{display.sender.email}</Text>
 </View>
 
 {/* Recipient */}
 <View className="mb-4 pb-4 border-b border-border">
 <Text className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wide">To</Text>
-<Text className="text-base font-semibold text-foreground">{transaction.recipient.name}</Text>
-<Text className="text-sm text-muted-foreground">{transaction.recipient.email}</Text>
+<Text className="text-base font-semibold text-foreground">{display.recipient.name}</Text>
+<Text className="text-sm text-muted-foreground">{display.recipient.email}</Text>
 </View>
 
 {/* Transaction Meta */}
 <View className="space-y-3">
 <View className="flex-row justify-between items-center">
 <Text className="text-sm text-muted-foreground">Transaction ID</Text>
-<Text className="text-sm font-mono font-medium text-foreground">{transaction.transactionId}</Text>
+<Text className="text-sm font-mono font-medium text-foreground">{display.transactionId}</Text>
 </View>
 
 <View className="flex-row justify-between items-center">
 <Text className="text-sm text-muted-foreground">Date</Text>
-<Text className="text-sm font-medium text-foreground">{transaction.date}</Text>
+<Text className="text-sm font-medium text-foreground">{display.date}</Text>
 </View>
 
 <View className="flex-row justify-between items-center">
 <Text className="text-sm text-muted-foreground">Time</Text>
-<Text className="text-sm font-medium text-foreground">{transaction.time}</Text>
+<Text className="text-sm font-medium text-foreground">{display.time}</Text>
 </View>
 
 <View className="flex-row justify-between items-center">
 <Text className="text-sm text-muted-foreground">Payment Method</Text>
 <View className="flex-row items-center">
-<Text className="text-sm font-medium text-foreground mr-2">{transaction.paymentMethod}</Text>
+<Text className="text-sm font-medium text-foreground mr-2">{display.paymentMethod}</Text>
 <TouchableOpacity onPress={handleDownloadReceipt} className="p-1">
 <Download className="text-primary" size={18} />
 </TouchableOpacity>
@@ -239,7 +287,7 @@ Keep sending to earn more
 </View>
 </View>
 <Text style={{ fontSize: 32, fontWeight: 'bold', color: '#ffffff' }}>
-+{transaction.rewardsEarned}
++{display.rewardsEarned}
 </Text>
 </View>
 </LinearGradient>
@@ -248,7 +296,7 @@ Keep sending to earn more
 {/* Share Message - Friendly & Casual */}
 <View className="px-6 mb-6">
 <Text className="text-lg font-bold text-foreground mb-3">
-Share with {transaction.recipient.name.split(' ')[0]} 💬
+Share with {display.recipient.name.split(' ')[0]} 💬
 </Text>
 
 <View className="bg-card rounded-2xl border border-border p-4 mb-4">

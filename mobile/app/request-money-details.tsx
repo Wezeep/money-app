@@ -1,26 +1,29 @@
 import React, { useState } from "react";
 import {
-View,
-Text,
-ScrollView,
-TouchableOpacity,
-Image,
-Modal,
-TextInput,
-Pressable,
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  Modal,
+  TextInput,
+  Pressable,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-ArrowLeft,
-Check,
-User,
-ChevronDown,
-Globe,
-MapPin,
+  ArrowLeft,
+  Check,
+  User,
+  ChevronDown,
+  Globe,
+  MapPin,
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRequestContext } from "@/components/RequestContext";
+import { moneyRequestsApi } from "@/lib/api";
 
 type Contact = {
 id: string;
@@ -58,6 +61,8 @@ const [currency, setCurrency] = useState("USD");
 const [message, setMessage] = useState("");
 const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
 const [showPreviewOverlay, setShowPreviewOverlay] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
 // Custom request states
 const [customAmounts, setCustomAmounts] = useState<{ [key: string]: string }>({});
@@ -87,23 +92,48 @@ return;
 setShowPreviewOverlay(true);
 };
 
-const handleSendRequest = () => {
-// Store all request details in context
-setRequestDetails({
-requestType,
-amount,
-currency,
-message,
-requestGeo,
-customAmounts,
-customCurrencies,
-customMessages,
-customRequestGeo,
-});
-
-setShowPreviewOverlay(false);
-router.push("/request-money-status");
-};
+const handleSendRequest = async () => {
+    setRequestDetails({
+      requestType,
+      amount,
+      currency,
+      message,
+      requestGeo,
+      customAmounts,
+      customCurrencies,
+      customMessages,
+      customRequestGeo,
+    });
+    setSendError(null);
+    setSending(true);
+    try {
+      const responses: { shareableLink?: string }[] = [];
+      for (const contact of contacts) {
+        const amt = requestType === "same" ? amount : (customAmounts[contact.id] || amount);
+        if (!amt || parseFloat(amt) <= 0) continue;
+        const res = await moneyRequestsApi.create({
+          contactId: contact.id,
+          amount: parseFloat(amt).toFixed(2),
+          currency,
+          isFixedAmount: true,
+          notes: message || undefined,
+        });
+        responses.push(res);
+      }
+      setShowPreviewOverlay(false);
+      router.push({
+        pathname: "/request-money-status",
+        params: {
+          shareableLink: responses[0]?.shareableLink ?? "",
+          requestCount: String(responses.length),
+        },
+      });
+    } catch (e: unknown) {
+      setSendError(e instanceof Error ? e.message : "Failed to send request(s)");
+    } finally {
+      setSending(false);
+    }
+  };
 
 const handleCancel = () => {
 setShowPreviewOverlay(false);
@@ -861,7 +891,8 @@ className="w-8 h-8 rounded-full mr-3"
 
 {/* Action Buttons */}
 <View className="gap-3 mt-2">
-<TouchableOpacity onPress={handleSendRequest}>
+{sendError ? <Text className="text-red-500 text-sm mb-2 text-center">{sendError}</Text> : null}
+<TouchableOpacity onPress={handleSendRequest} disabled={sending}>
 <LinearGradient
 colors={["#667eea", "#764ba2"]}
 style={{
@@ -871,11 +902,11 @@ alignItems: "center",
 justifyContent: "center",
 }}
 >
-<Text className="text-white font-bold text-base">Send Request</Text>
+{sending ? <ActivityIndicator color="#fff" size="small" /> : <Text className="text-white font-bold text-base">Send Request</Text>}
 </LinearGradient>
 </TouchableOpacity>
 
-<TouchableOpacity onPress={handleCancel}>
+<TouchableOpacity onPress={handleCancel} disabled={sending}>
 <View
 style={{
 borderWidth: 2,

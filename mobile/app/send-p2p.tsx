@@ -8,10 +8,17 @@ TextInput,
 Pressable,
 Modal,
 Image,
+ActivityIndicator,
+Alert,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
+
+const SafeAreaView = RNSafeAreaView as React.ComponentType<
+  React.ComponentProps<typeof RNSafeAreaView> & { className?: string }
+>;
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { transactionsApi } from "@/lib/api";
 import {
 ArrowLeft,
 Wallet,
@@ -116,26 +123,24 @@ const exchangeRates: { [key: string]: number } = {
 "INR-INR": 1,
 };
 
-// Payment methods
-const paymentMethods = [
-{
-id: "card",
-name: "Credit/Debit Card",
-icon: "credit",
-lastFour: "•••• 4242",
-fee: 1.99,
-speed: "Instant",
-currency: "USD",
-},
-{
-id: "bank",
-name: "Bank Account",
-icon: "building",
-lastFour: "•••• 7890",
-fee: 0.99,
-speed: "1-2 days",
-currency: "USD",
-},
+// Payment method item: wallet entries have balance/recommended/badge; card/bank have lastFour; all may have exchangeNote
+type PaymentMethodItem = {
+  id: string;
+  name: string;
+  icon: string;
+  fee: number;
+  speed: string;
+  currency: string;
+  lastFour?: string;
+  balance?: number;
+  recommended?: boolean;
+  badge?: string;
+  exchangeNote?: string;
+};
+
+const paymentMethods: PaymentMethodItem[] = [
+  { id: "card", name: "Credit/Debit Card", icon: "credit", lastFour: "•••• 4242", fee: 1.99, speed: "Instant", currency: "USD" },
+  { id: "bank", name: "Bank Account", icon: "building", lastFour: "•••• 7890", fee: 0.99, speed: "1-2 days", currency: "USD" },
 ];
 
 export default function SendP2PScreen() {
@@ -151,6 +156,8 @@ const [showPaymentOverlay, setShowPaymentOverlay] = useState(false);
 const [showContactsOverlay, setShowContactsOverlay] = useState(false);
 const [showConfirmation, setShowConfirmation] = useState(false);
 const [contactSearch, setContactSearch] = useState("");
+const [sending, setSending] = useState(false);
+const [sendError, setSendError] = useState<string | null>(null);
 
 // Find matching wallet
 const matchingWallet = userWallets.find(
@@ -171,44 +178,38 @@ setSelectedPayment("");
 }, [selectedCurrency]);
 
 // Build dynamic payment methods list
-const availablePaymentMethods = [
-// Matching wallet (if exists and has balance)
-...(hasMatchingWallet
-? [
-{
-id: `wallet-${selectedCurrency}`,
-name: `${selectedCurrency} Wallet`,
-icon: "wallet",
-balance: matchingWallet!.balance,
-fee: 0,
-speed: "Instant",
-recommended: true,
-badge: "Best Choice - No Fees",
-currency: selectedCurrency,
-},
-]
-: []),
-// Other currency wallets
-...userWallets
-.filter((w) => w.currency !== selectedCurrency && w.balance > 0)
-.map((w) => ({
-id: `wallet-${w.currency}`,
-name: `${w.currency} Wallet`,
-icon: "wallet",
-balance: w.balance,
-fee: 2.5,
-speed: "Instant",
-recommended: false,
-currency: w.currency,
-exchangeNote: `Exchange fee applies`,
-})),
-// Other payment methods
-...paymentMethods.map((m) => ({
-...m,
-id: m.id,
-exchangeNote:
-m.currency !== selectedCurrency ? "Exchange fee applies" : undefined,
-})),
+const availablePaymentMethods: PaymentMethodItem[] = [
+  ...(hasMatchingWallet
+    ? [{
+        id: `wallet-${selectedCurrency}`,
+        name: `${selectedCurrency} Wallet`,
+        icon: "wallet",
+        balance: matchingWallet!.balance,
+        fee: 0,
+        speed: "Instant",
+        recommended: true,
+        badge: "Best Choice - No Fees",
+        currency: selectedCurrency,
+      }]
+    : []),
+  ...userWallets
+    .filter((w) => w.currency !== selectedCurrency && w.balance > 0)
+    .map((w) => ({
+      id: `wallet-${w.currency}`,
+      name: `${w.currency} Wallet`,
+      icon: "wallet",
+      balance: w.balance,
+      fee: 2.5,
+      speed: "Instant",
+      recommended: false,
+      currency: w.currency,
+      exchangeNote: "Exchange fee applies",
+    })),
+  ...paymentMethods.map((m) => ({
+    ...m,
+    id: m.id,
+    exchangeNote: m.currency !== selectedCurrency ? "Exchange fee applies" : undefined,
+  })),
 ];
 
 const selectedPaymentMethod = availablePaymentMethods.find(
@@ -771,7 +772,7 @@ selectedPayment === method.id
 : "border-border bg-card"
 }`}
 >
-{method.recommended && (
+{method.recommended && method.badge != null && (
 <View className="bg-primary px-2.5 py-1 flex-row items-center gap-1">
 <Zap className="text-primary-foreground" size={12} />
 <Text className="text-xs font-bold text-primary-foreground">
@@ -929,7 +930,29 @@ ${totalFee.toFixed(2)}
 </View>
 
 <View>
-<TouchableOpacity onPress={() => router.push("/")}>
+<TouchableOpacity
+disabled={sending}
+onPress={async () => {
+if (!selectedRecipient || !amount || !selectedPayment) return;
+setSendError(null);
+setSending(true);
+try {
+const res = await transactionsApi.sendP2P({
+contactId: selectedRecipient.id,
+amount: parseFloat(amount).toFixed(2),
+currency: selectedCurrency,
+paymentMethod: selectedPayment,
+notes: note || undefined,
+});
+setShowConfirmation(false);
+router.replace({ pathname: "/send-p2p-status", params: { transactionId: res.id } });
+} catch (e: unknown) {
+setSendError(e instanceof Error ? e.message : "Send failed");
+} finally {
+setSending(false);
+}
+}}
+>
 <LinearGradient
 colors={["#667eea", "#764ba2"]}
 style={{
@@ -940,9 +963,16 @@ alignItems: "center",
 justifyContent: "center",
 }}
 >
+{sending ? (
+<ActivityIndicator color="#fff" size="small" />
+) : (
 <Text className="text-white font-bold text-sm">Send Now</Text>
+)}
 </LinearGradient>
 </TouchableOpacity>
+{sendError ? (
+<Text className="text-red-500 text-sm mt-2 text-center">{sendError}</Text>
+) : null}
 <View style={{ margin: 4 }} />
 <TouchableOpacity onPress={() => setShowConfirmation(false)}>
 <LinearGradient

@@ -16,9 +16,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "split_bill_participants", indexes = {
-    @Index(name = "idx_split_bill", columnList = "splitBillId"),
-    @Index(name = "idx_user", columnList = "userId"),
-    @Index(name = "idx_status", columnList = "status")
+    @Index(name = "idx_split_bill_participants_bill", columnList = "splitBillId"),
+    @Index(name = "idx_split_bill_participants_user", columnList = "userId"),
+    @Index(name = "idx_split_bill_participants_status", columnList = "status")
 })
 @Data
 @Builder

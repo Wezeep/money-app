@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,8 +7,14 @@ import {
   Modal,
   FlatList,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
+
+const SafeAreaView = RNSafeAreaView as React.ComponentType<
+  React.ComponentProps<typeof RNSafeAreaView> & { className?: string }
+>;
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
   ArrowLeft,
@@ -24,9 +30,10 @@ import {
   Banknote,
   DollarSign,
 } from "lucide-react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useColorScheme } from "nativewind";
+import { transactionsApi } from "@/lib/api";
 
 type Currency = {
   code: string;
@@ -87,8 +94,15 @@ const currencies: Currency[] = [
   { code: "PEN", name: "Peruvian Sol", symbol: "S/", flag: "🇵🇪", rate: 3.95 },
 ];
 
-export default function ExchangeScreen() {
+export default function SendWorldwideDetailsScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    recipientName?: string;
+    recipientPhone?: string;
+    recipientCountry?: string;
+    recipientCurrency?: string;
+    countryCode?: string;
+  }>();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
 
@@ -96,6 +110,14 @@ export default function ExchangeScreen() {
   const [receiveAmount, setReceiveAmount] = useState("850.50");
   const [fromCurrency, setFromCurrency] = useState<Currency>(currencies[0]);
   const [toCurrency, setToCurrency] = useState<Currency>(currencies[1]);
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    if (params.recipientCurrency) {
+      const match = currencies.find((c) => c.code === params.recipientCurrency);
+      if (match) setToCurrency(match);
+    }
+  }, [params.recipientCurrency]);
   const [showFromModal, setShowFromModal] = useState(false);
   const [showToModal, setShowToModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -326,12 +348,52 @@ export default function ExchangeScreen() {
         </View>
 
         {/* Continue Button */}
-        <TouchableOpacity>
+        <TouchableOpacity
+          disabled={sending || !params.recipientName || !params.recipientPhone || !params.countryCode}
+          onPress={async () => {
+            const recipientName = params.recipientName ?? "";
+            const recipientPhone = params.recipientPhone ?? "";
+            const countryCode = params.countryCode ?? "";
+            if (!recipientName || !recipientPhone || !countryCode) {
+              Alert.alert("Error", "Missing recipient or country. Go back and select a recipient.");
+              return;
+            }
+            setSending(true);
+            try {
+              const res = await transactionsApi.sendWorldwide({
+                recipientName,
+                recipientPhone,
+                countryCode,
+                sendAmount: parseFloat(sendAmount).toFixed(2),
+                sendCurrency: fromCurrency.code,
+                receiveAmount: parseFloat(receiveAmount).toFixed(2),
+                receiveCurrency: toCurrency.code,
+                paymentMethod: selectedPayment.id,
+                deliveryMethod: selectedReceive.id,
+              });
+              router.replace({
+                pathname: "/send-worldwide-status",
+                params: { transactionId: res.id },
+              });
+            } catch (e: unknown) {
+              Alert.alert(
+                "Send failed",
+                e instanceof Error ? e.message : "Could not complete transfer"
+              );
+            } finally {
+              setSending(false);
+            }
+          }}
+        >
           <LinearGradient
             colors={["#667eea", "#764ba2"]}
             style={{ padding: 16, borderRadius: 16, alignItems: "center" }}
           >
-            <Text className="text-white text-base font-bold">Continue</Text>
+            {sending ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text className="text-white text-base font-bold">Continue</Text>
+            )}
           </LinearGradient>
         </TouchableOpacity>
       </ScrollView>

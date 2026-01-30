@@ -92,13 +92,14 @@ export default function HomeScreen() {
 
   const handleQuickAction = (actionId: string) => {
     if (actionId === "1") {
-      // Send action - show modal overlay
       setShowSendModal(true);
+    } else if (actionId === "2") {
+      router.push("/request-money");
     } else if (actionId === "3") {
-      // Pay Bills action - show modal overlay
       setShowPayBillModal(true);
+    } else if (actionId === "4") {
+      router.push("/bill-split");
     }
-    // Add handlers for other actions later
   };
 
   const handleSendOption = (type: "worldwide" | "p2p") => {
@@ -106,8 +107,7 @@ export default function HomeScreen() {
     if (type === "worldwide") {
       router.push("/send-worldwide");
     } else {
-      // P2P flow will be added next
-      console.log("P2P Transfer");
+      router.push("/send-p2p");
     }
   };
 

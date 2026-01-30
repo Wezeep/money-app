@@ -1,51 +1,78 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Share, Alert, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Share, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { 
-Check, 
-Zap, 
-CheckCircle, 
-Copy,
-Share2,
-ArrowLeft,
-Wallet,
-Shield,
-Rocket,
-Trophy
+import {
+  Check,
+  Zap,
+  CheckCircle,
+  Copy,
+  Share2,
+  ArrowLeft,
+  Wallet,
+  Shield,
+  Rocket,
+  Trophy,
 } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
+import { transactionsApi, type TransactionResponse } from '@/lib/api';
 
-type TransferStatus = 
-| 'processing' 
-| 'in_transit' 
-| 'completed';
+type TransferStatus = 'processing' | 'in_transit' | 'completed';
 
 type StatusStep = {
-id: TransferStatus;
-label: string;
-icon: any;
-iconColor: string;
-iconBg: string;
-description: string;
+  id: TransferStatus;
+  label: string;
+  icon: any;
+  iconColor: string;
+  iconBg: string;
+  description: string;
 };
 
-export default function TransferStatusScreen() {
-const router = useRouter();
-const [currentStatus, setCurrentStatus] = useState<TransferStatus>('processing');
-
-// Mock transfer data (in real app, this would come from route params or API)
-const transferData = {
-recipientName: 'John Doe',
-amount: '500.00',
-currency: 'GBP',
-receiveAmount: '610.50',
-receiveCurrency: 'EUR',
-transactionId: 'WZP-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
-estimatedTime: '2-5 minutes',
-cashoutMethod: 'Wezeep Wallet',
+const defaultTransferData = {
+  recipientName: 'John Doe',
+  amount: '500.00',
+  currency: 'GBP',
+  receiveAmount: '610.50',
+  receiveCurrency: 'EUR',
+  transactionId: 'WZP-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+  estimatedTime: '2-5 minutes',
+  cashoutMethod: 'Wezeep Wallet',
 };
+
+export default function SendWorldwideStatusScreen() {
+  const router = useRouter();
+  const { transactionId } = useLocalSearchParams<{ transactionId?: string }>();
+  const [currentStatus, setCurrentStatus] = useState<TransferStatus>('processing');
+  const [transaction, setTransaction] = useState<TransactionResponse | null>(null);
+  const [loading, setLoading] = useState(!!transactionId);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!transactionId) {
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    transactionsApi.getTransaction(transactionId)
+      .then((res) => { if (!cancelled) setTransaction(res); })
+      .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [transactionId]);
+
+  const transferData = transaction
+    ? {
+        recipientName: transaction.recipientName ?? 'Recipient',
+        amount: transaction.amountSent,
+        currency: transaction.sentCurrency,
+        receiveAmount: transaction.amountReceived,
+        receiveCurrency: transaction.receivedCurrency,
+        transactionId: transaction.reference ?? transaction.id,
+        estimatedTime: '2-5 minutes',
+        cashoutMethod: transaction.deliveryMethod === 'WEEZEEP_WALLET' ? 'Wezeep Wallet' : transaction.deliveryMethod,
+      }
+    : defaultTransferData;
 
 const statusSteps: StatusStep[] = [
 {
@@ -96,10 +123,30 @@ return () => clearInterval(interval);
 }, []);
 
 const getCurrentStepIndex = () => {
-return statusSteps.findIndex((step) => step.id === currentStatus);
-};
+    return statusSteps.findIndex((step) => step.id === currentStatus);
+  };
 
-const shareMessage = `Hey! 👋
+  if (loading) {
+    return (
+      <SafeAreaView className="flex-1 bg-background items-center justify-center">
+        <ActivityIndicator size="large" />
+        <Text className="text-muted-foreground mt-3">Loading transfer...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView className="flex-1 bg-background items-center justify-center px-6">
+        <Text className="text-destructive text-center mb-4">{error}</Text>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text className="text-primary font-semibold">Go back</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  const shareMessage = `Hey! 👋
 
 Just sent you ${transferData.currency} ${transferData.amount} (${transferData.receiveCurrency} ${transferData.receiveAmount}) via Wezeep! 💸
 
@@ -111,32 +158,27 @@ Download the Wezeep app to track your transfer and access your funds instantly! 
 
 Get Wezeep: [App Link]`;
 
-const handleCopyMessage = async () => {
-await Clipboard.setStringAsync(shareMessage);
-Alert.alert('Copied!', 'Message copied to clipboard');
-};
+  const handleCopyMessage = async () => {
+    await Clipboard.setStringAsync(shareMessage);
+    Alert.alert('Copied!', 'Message copied to clipboard');
+  };
 
-const handleShare = async () => {
-try {
-await Share.share({
-message: shareMessage,
-title: 'Wezeep Transfer Update',
-});
-} catch (error) {
-console.error('Error sharing:', error);
-}
-};
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: shareMessage,
+        title: 'Wezeep Transfer Update',
+      });
+    } catch (err) {
+      console.error('Error sharing:', err);
+    }
+  };
 
-const isStepCompleted = (stepIndex: number) => {
-return stepIndex <= getCurrentStepIndex();
-};
+  const isStepCompleted = (stepIndex: number) => stepIndex <= getCurrentStepIndex();
+  const isStepActive = (stepIndex: number) => stepIndex === getCurrentStepIndex();
 
-const isStepActive = (stepIndex: number) => {
-return stepIndex === getCurrentStepIndex();
-};
-
-return (
-<SafeAreaView className="flex-1 bg-background">
+  return (
+    <SafeAreaView className="flex-1 bg-background">
 {/* Header */}
 <View className="flex-row items-center justify-between px-6 py-4">
 <TouchableOpacity

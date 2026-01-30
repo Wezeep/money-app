@@ -15,9 +15,9 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "referrals", indexes = {
-    @Index(name = "idx_referrer", columnList = "referrerId"),
-    @Index(name = "idx_referred", columnList = "referredUserId", unique = true),
-    @Index(name = "idx_code", columnList = "referralCode", unique = true)
+    @Index(name = "idx_referrals_referrer", columnList = "referrerId"),
+    @Index(name = "idx_referrals_referred", columnList = "referredUserId", unique = true),
+    @Index(name = "idx_referrals_code", columnList = "referralCode", unique = true)
 })
 @Data
 @Builder
