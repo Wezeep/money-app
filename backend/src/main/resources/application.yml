@@ -1,0 +1,170 @@
+spring:
+  application:
+    name: wezeep-backend
+  
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/wezeep}
+    username: ${DATABASE_USERNAME:wezeep}
+    password: ${DATABASE_PASSWORD:wezeep}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+  
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+  
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:}
+            client-secret: ${GOOGLE_CLIENT_SECRET:}
+            scope:
+              - email
+              - profile
+          facebook:
+            client-id: ${FACEBOOK_CLIENT_ID:}
+            client-secret: ${FACEBOOK_CLIENT_SECRET:}
+            scope:
+              - email
+              - public_profile
+          apple:
+            client-id: ${APPLE_CLIENT_ID:}
+            client-secret: ${APPLE_CLIENT_SECRET:}
+            scope:
+              - email
+              - name
+        provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+            token-uri: https://www.googleapis.com/oauth2/v4/token
+            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+            user-name-attribute: sub
+          facebook:
+            authorization-uri: https://www.facebook.com/v12.0/dialog/oauth
+            token-uri: https://graph.facebook.com/v12.0/oauth/access_token
+            user-info-uri: https://graph.facebook.com/v12.0/me?fields=id,name,email
+          apple:
+            authorization-uri: https://appleid.apple.com/auth/authorize
+            token-uri: https://appleid.apple.com/auth/token
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: on_param
+    include-exception: false
+
+logging:
+  level:
+    root: INFO
+    com.wezeep: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+wezeep:
+  app:
+    url: ${APP_URL:https://wezeep.app}
+  
+  security:
+    jwt:
+      secret: ${JWT_SECRET:your-256-bit-secret-key-change-in-production-minimum-32-characters}
+      expiration: ${JWT_EXPIRATION:3888000000} # 45 days in milliseconds
+      refresh-expiration: ${JWT_REFRESH_EXPIRATION:7776000000} # 90 days in milliseconds
+    session:
+      expiry-days: ${SESSION_EXPIRY_DAYS:45}
+      min-expiry-days: 30
+      max-expiry-days: 90
+    rate-limit:
+      requests-per-minute: ${RATE_LIMIT_REQUESTS:10}
+      requests-per-hour: ${RATE_LIMIT_HOUR:100}
+  
+  fintech:
+    fx:
+      update-interval-seconds: ${FX_UPDATE_INTERVAL:60}
+      rate-change-threshold: ${FX_RATE_CHANGE_THRESHOLD:0.01} # 1%
+      api-url: ${FX_API_URL:https://api.exchangerate-api.com/v4/latest/USD}
+    transaction:
+      fee-percentage-min: ${TRANSACTION_FEE_MIN:0.015} # 1.5%
+      fee-percentage-max: ${TRANSACTION_FEE_MAX:0.03} # 3%
+      volume-tier-1: ${VOLUME_TIER_1:1000} # USD
+      volume-tier-2: ${VOLUME_TIER_2:5000} # USD
+      volume-tier-3: ${VOLUME_TIER_3:10000} # USD
+    payment:
+      provider-timeout: ${PAYMENT_PROVIDER_TIMEOUT:30000} # 30 seconds
+      retry-attempts: ${PAYMENT_RETRY_ATTEMPTS:3}
+      fallback-enabled: ${PAYMENT_FALLBACK_ENABLED:true}
+    money-request:
+      expiration-seconds: ${MONEY_REQUEST_EXPIRATION:45}
+    split-bill:
+      max-participants: ${SPLIT_BILL_MAX_PARTICIPANTS:100}
+  
+  qr:
+    expiration-hours: ${QR_EXPIRATION_HOURS:24}
+  
+  encryption:
+    algorithm: ${ENCRYPTION_ALGORITHM:AES-256}
+    key: ${ENCRYPTION_KEY:change-this-encryption-key-in-production}
