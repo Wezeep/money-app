@@ -12,8 +12,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react-native";
 import { useRouter } from "expo-router";
-import { useAuth } from "@/components/AuthContext";
-import { authApi } from "@/lib/api";
+import { useAuth } from "@components/AuthContext";
+import { authApi } from "@lib/api";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -26,7 +26,7 @@ export default function LoginScreen() {
 
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
-      router.replace("/(tabs)");
+      router.replace("/(tabs)/home" as any);
     }
   }, [authLoading, isAuthenticated, router]);
 
@@ -44,7 +44,7 @@ export default function LoginScreen() {
         email: res.email,
         wezeepId: res.wezeepId,
       });
-      router.replace("/(tabs)");
+      router.replace("/(tabs)/home" as any);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Login failed");
     } finally {

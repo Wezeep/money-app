@@ -5,6 +5,10 @@ spring:
       hibernate:
         format_sql: false
 
+  h2:
+    console:
+      enabled: true
+
 logging:
   level:
     root: WARN

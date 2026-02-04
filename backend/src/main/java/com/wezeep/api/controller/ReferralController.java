@@ -5,7 +5,7 @@ import com.wezeep.domain.model.User;
 import com.wezeep.domain.repository.ReferralRepository;
 import com.wezeep.domain.repository.UserRepository;
 import com.wezeep.security.UserPrincipal;
-import com.wezeep.service.RewardService;
+import com.wezeep.feature.rewards.service.RewardService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;

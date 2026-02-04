@@ -25,7 +25,7 @@ import {
   Check,
   Camera,
 } from "lucide-react-native";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { ThemeToggle } from "@components/ThemeToggle";
 import { useRouter } from "expo-router";
 
 type Contact = {

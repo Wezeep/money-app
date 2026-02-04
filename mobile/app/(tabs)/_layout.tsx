@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Home, Users, Wallet, Gift } from 'lucide-react-native';
+import { Home, Users, Wallet, Gift, Settings } from 'lucide-react-native';
 import { cssInterop, useColorScheme } from 'nativewind';
 
 // Enable className styling for icons
@@ -63,6 +63,15 @@ tabBarIcon: ({ focused }) => (
 ),
 }}
 />
+  <Tabs.Screen
+    name="settings"
+    options={{
+      title: 'Settings',
+      tabBarIcon: ({ focused }) => (
+        <Settings className={focused ? 'text-primary' : 'text-muted-foreground'} size={22} />
+      ),
+    }}
+  />
 </Tabs>
 );
 }

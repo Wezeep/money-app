@@ -15,7 +15,7 @@ import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 const SafeAreaView = RNSafeAreaView as React.ComponentType<
   React.ComponentProps<typeof RNSafeAreaView> & { className?: string }
 >;
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { ThemeToggle } from "@components/ThemeToggle";
 import {
   ArrowLeft,
   ChevronDown,
@@ -33,7 +33,7 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useColorScheme } from "nativewind";
-import { transactionsApi } from "@/lib/api";
+import { transactionsApi } from "@lib/api";
 
 type Currency = {
   code: string;

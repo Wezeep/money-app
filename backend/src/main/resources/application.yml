@@ -97,6 +97,13 @@ spring:
             authorization-uri: https://appleid.apple.com/auth/authorize
             token-uri: https://appleid.apple.com/auth/token
 
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: true
+
 server:
   port: ${SERVER_PORT:8080}
   error:
