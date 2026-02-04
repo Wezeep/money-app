@@ -16,9 +16,9 @@ import {
   Camera,
   Repeat,
 } from "lucide-react-native";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { ThemeToggle } from "@components/ThemeToggle";
 import { useRouter } from "expo-router";
-import { useBillPaymentContext } from "@/components/BillPaymentContext";
+import { useBillPaymentContext } from "@components/BillPaymentContext";
 
 type QuickAction = {
   id: string;

@@ -28,5 +28,29 @@ spring:
       - org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration
       - org.springframework.boot.autoconfigure.security.oauth2.client.servlet.OAuth2ClientAutoConfiguration
 
+  h2:
+    console:
+      enabled: true
+
 server:
   port: 8081
+
+management:
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+    redis:
+      enabled: false
+    mail:
+      enabled: false

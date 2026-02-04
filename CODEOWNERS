@@ -1,0 +1,10 @@
+# Code Owners - Require review for sensitive files
+# These files require approval from repository owners before merging
+
+# Sensitive credential templates
+SEED_DATA_CREDENTIALS.template.md @Wezeep
+.env* @Wezeep
+
+# Configuration files with potential secrets
+backend/src/main/resources/application*.yml @Wezeep
+docker-compose*.yml @Wezeep

@@ -1,13 +1,23 @@
 {
-  "extends": "expo/tsconfig.base",
+  "extends": "./node_modules/expo/tsconfig.base.json",
   "compilerOptions": {
     "strict": false,
     "jsx": "react-jsx",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "lib": ["es2017", "dom"],
+    "types": ["nativewind/types", "node"],
+    "skipLibCheck": true,
     "paths": {
       "@/*": [
-        "./*"
+        "./src/*"
+      ],
+      "@components/*": [
+        "./components/*"
+      ],
+      "@lib/*": [
+        "./lib/*"
       ],
       "tailwind.config": [
         "./tailwind.config.js"

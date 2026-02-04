@@ -1,7 +1,7 @@
 package com.wezeep.service;
 
-import com.wezeep.api.dto.CreateSplitBillRequest;
-import com.wezeep.api.dto.SplitBillResponse;
+import com.wezeep.feature.billpayment.api.dto.CreateSplitBillRequest;
+import com.wezeep.feature.billpayment.api.dto.SplitBillResponse;
 import com.wezeep.domain.model.Contact;
 import com.wezeep.domain.model.SplitBill;
 import com.wezeep.domain.model.SplitBillParticipant;

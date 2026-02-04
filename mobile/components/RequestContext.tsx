@@ -7,6 +7,7 @@ type Contact = {
   avatar: string;
   isWezeepUser: boolean;
   country: string;
+  wezeepId?: string;
 };
 
 type RequestContextType = {

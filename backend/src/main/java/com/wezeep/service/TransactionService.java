@@ -2,10 +2,11 @@ package com.wezeep.service;
 
 import com.wezeep.domain.model.*;
 import com.wezeep.domain.repository.*;
-import com.wezeep.api.dto.SendMoneyRequest;
-import com.wezeep.api.dto.SendP2PRequest;
-import com.wezeep.api.dto.SendWorldwideRequest;
+import com.wezeep.feature.moneytransfer.api.dto.SendMoneyRequest;
+import com.wezeep.feature.moneytransfer.api.dto.SendP2PRequest;
+import com.wezeep.feature.moneytransfer.api.dto.SendWorldwideRequest;
 import com.wezeep.api.dto.TransactionResponse;
+import com.wezeep.feature.rewards.service.RewardService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;

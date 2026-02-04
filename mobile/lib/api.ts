@@ -3,7 +3,7 @@
  * Set EXPO_PUBLIC_API_BASE_URL or use default for local backend.
  */
 
-const DEFAULT_BASE_URL = "http://localhost:8080";
+const DEFAULT_BASE_URL = "http://localhost:8082";
 
 export function getApiBaseUrl(): string {
   if (typeof process !== "undefined" && process.env?.EXPO_PUBLIC_API_BASE_URL) {
@@ -208,6 +208,7 @@ export const usersApi = {
 // --- Money requests ---
 export interface CreateMoneyRequestRequest {
   recipientId?: string;
+  recipientWezeepId?: string;
   contactId?: string;
   amount: string;
   currency: string;

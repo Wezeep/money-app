@@ -1,0 +1,23 @@
+# Sensitive development credentials (actual values not committed)
+SEED_DATA_CREDENTIALS.md
+
+# Environment variables (production secrets should never be committed)
+.env
+.env.local
+.env.production
+*.secret
+*.credentials
+
+# Backup copies of sensitive files
+SEED_DATA_CREDENTIALS.md.backup
+*_BACKUP.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
